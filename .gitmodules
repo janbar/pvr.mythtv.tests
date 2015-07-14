@@ -1,0 +1,4 @@
+[submodule "pvr.mythtv"]
+	path = pvr.mythtv
+	url = https://github.com/janbar/pvr.mythtv.git
+	branch = series_recordings
