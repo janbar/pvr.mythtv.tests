@@ -34,6 +34,15 @@ add_subdirectory(mock)
 
 set(pvrtest_SOURCES src/pvrtest.cpp src/sm_test.cpp)
 
+if(NOT WIN32 AND (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX))
+  if(HAS_BUILTIN_SYNC_ADD_AND_FETCH)
+    add_definitions("-DHAS_BUILTIN_SYNC_ADD_AND_FETCH")
+  endif()
+  if(HAS_BUILTIN_SYNC_SUB_AND_FETCH)
+    add_definitions("-DHAS_BUILTIN_SYNC_SUB_AND_FETCH")
+  endif()
+endif()
+
 set(DEPLIBS pvr.mythtv)
 if(NOT WIN32)
   list(APPEND DEPLIBS dl)
