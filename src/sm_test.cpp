@@ -21,7 +21,7 @@ bool sm_test::sm_test_1(const char* tag, TimerTypeId type, MythScheduleManager* 
   MythRecordingRule rule = ms->NewFromTimer(inEntry, false);
   MythTimerEntry outEntry;
 
-  if (rule.Type() == Myth::RT_UNKNOWN || !ms->FillTimerEntry(outEntry, rule))
+  if (rule.Type() == Myth::RT_UNKNOWN || !ms->FillTimerEntryWithRule(outEntry, rule))
   {
     Out(pvrtest::TEST_INCOMPLETE, "%s (%d)", tag, type);
     return true;
