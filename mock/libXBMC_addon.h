@@ -8,55 +8,6 @@
 #include <stdint.h>
 #include <stdarg.h>
 
-#ifdef _WIN32                   // windows
-#ifndef snprintf
-#define snprintf _snprintf
-#endif
-#ifndef strnicmp
-#define strnicmp _strnicmp
-#endif
-#ifndef _SSIZE_T_DEFINED
-typedef intptr_t      ssize_t;
-#define _SSIZE_T_DEFINED
-#endif // !_SSIZE_T_DEFINED
-#include "dlfcn-win32.h"
-#define ADDON_DLL               "\\library.xbmc.addon\\libXBMC_addon" ADDON_HELPER_EXT
-#define ADDON_HELPER_EXT        ".dll"
-#else
-#if defined(__APPLE__)          // osx
-#if defined(__POWERPC__)
-#define ADDON_HELPER_ARCH       "powerpc-osx"
-#elif defined(__arm__)
-#define ADDON_HELPER_ARCH       "arm-osx"
-#elif defined(__x86_64__)
-#define ADDON_HELPER_ARCH       "x86-osx"
-#else
-#define ADDON_HELPER_ARCH       "x86-osx"
-#endif
-#else                           // linux
-#if defined(__x86_64__)
-#define ADDON_HELPER_ARCH       "x86_64-linux"
-#elif defined(_POWERPC)
-#define ADDON_HELPER_ARCH       "powerpc-linux"
-#elif defined(_POWERPC64)
-#define ADDON_HELPER_ARCH       "powerpc64-linux"
-#elif defined(__ARMEL__)
-#define ADDON_HELPER_ARCH       "arm"
-#elif defined(__mips__)
-#define ADDON_HELPER_ARCH       "mips"
-#else
-#define ADDON_HELPER_ARCH       "i486-linux"
-#endif
-#endif
-#include <dlfcn.h>              // linux+osx
-#define ADDON_HELPER_EXT        ".so"
-#define ADDON_DLL_NAME "libXBMC_addon-" ADDON_HELPER_ARCH ADDON_HELPER_EXT
-#define ADDON_DLL "/library.xbmc.addon/" ADDON_DLL_NAME
-#endif
-#if defined(ANDROID)
-#include <sys/stat.h>
-#endif
-
 #ifdef LOG_DEBUG
 #undef LOG_DEBUG
 #endif
@@ -96,7 +47,7 @@ namespace ADDON
   class CHelper_libXBMC_addon
   {
   public:
-    CHelper_libXBMC_addon() : m_logLevel(LOG_ERROR)
+    CHelper_libXBMC_addon() : m_logLevel(LOG_DEBUG)
     {
     }
     ~CHelper_libXBMC_addon() {}
@@ -123,7 +74,7 @@ namespace ADDON
       log(loglevel, buffer);
     }
 
-    bool GetSetting(const char* settingName, void *settingValue) { return false; }
+    bool GetSetting(const char* settingName, void *settingValue);
 
     void QueueNotification(const queue_msg_t type, const char *format, ... )
     {

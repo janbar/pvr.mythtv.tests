@@ -16,9 +16,16 @@
 #include <pvrclient-mythtv.h>
 #include <platform/util/timeutils.h>
 
+#include "pvrtest.h"
+#include "kodi/xbmc_addon_dll.h"
+#include "kodi/xbmc_pvr_dll.h"
 #include "sm_test.h"
 
 using namespace ADDON;
+
+PVRTEST_SETTINGS* pvr_settings = 0;
+PVR_PROPERTIES*   pvr_props = 0;
+PVRClient*        pvr_client = 0;
 
 static char* getCmdOption(char **begin, char **end, const char* option)
 {
@@ -59,11 +66,23 @@ int main(int argc, char** argv)
     return ret;
 #endif /* __WINDOWS__ */
 
-  g_bExtraDebug = false;
-  g_szMythHostname = "localhost";
-  g_iProtoPort = 6543;
-  g_iWSApiPort = 6544;
-  g_szWSSecurityPin = "0000";
+  pvr_settings = new(PVRTEST_SETTINGS);
+  pvr_settings->extradebug = 0;
+  pvr_settings->host = "localhost";
+  pvr_settings->port = 6543;
+  pvr_settings->wsport = 6544;
+  pvr_settings->wssecuritypin = "0000";
+  pvr_settings->livetv = 1;
+  pvr_settings->livetv_conflict_method = 1;
+  pvr_settings->rec_template_provider = 1;
+  pvr_settings->demuxing = 0;
+  pvr_settings->tunedelay = 5;
+  pvr_settings->group_recordings = 0;
+  pvr_settings->enable_edl = 0;
+  pvr_settings->block_shutdown = 1;
+  pvr_settings->channel_icons = 1;
+  pvr_settings->recording_icons = 1;
+  pvr_settings->limit_tune_attempts = 1;
 
   char *buf;
 
@@ -76,7 +95,7 @@ int main(int argc, char** argv)
 
   if ((buf = getCmdOption(argv, argv + argc, "--mythtvhost"))
           || (buf = getCmdOption(argv, argv + argc, "-h")))
-    g_szMythHostname = buf;
+    pvr_settings->host = buf;
   else
   {
     printUsage();
@@ -84,13 +103,13 @@ int main(int argc, char** argv)
   }
   if ((buf = getCmdOption(argv, argv + argc, "--protoport"))
           || (buf = getCmdOption(argv, argv + argc, "-p")))
-    g_iProtoPort = atoi(buf);
+    pvr_settings->port = atoi(buf);
   if ((buf = getCmdOption(argv, argv + argc, "--wsapiport"))
           || (buf = getCmdOption(argv, argv + argc, "-w")))
-    g_iWSApiPort = atoi(buf);
+    pvr_settings->wsport = atoi(buf);
   if ((buf = getCmdOption(argv, argv + argc, "--wsapipin"))
           || (buf = getCmdOption(argv, argv + argc, "-s")))
-    g_szWSSecurityPin = buf;
+    pvr_settings->wssecuritypin = buf;
 
   ADDON::addon_log_t loglevel = ADDON::LOG_ERROR;
   if ((buf = getCmdOption(argv, argv + argc, "--loglevel"))
@@ -99,41 +118,31 @@ int main(int argc, char** argv)
     if (strncmp(buf, "debug", 5) == 0) loglevel = ADDON::LOG_DEBUG;
     else if (strncmp(buf, "warning", 7) == 0) loglevel = ADDON::LOG_NOTICE;
     else if (strncmp(buf, "info", 4) == 0) loglevel = ADDON::LOG_INFO;
-    else if (strncmp(buf, "extradebug", 10) == 0) { loglevel = ADDON::LOG_DEBUG; g_bExtraDebug = true; }
+    else if (strncmp(buf, "extradebug", 10) == 0)
+    {
+      loglevel = ADDON::LOG_DEBUG;
+      pvr_settings->extradebug = 1;
+    }
     else loglevel = ADDON::LOG_ERROR;
   }
 
   buf = NULL;
 
-  // Initialize global variables used by PVRClientMythTV
-  // normally, those would be loaded in client.cpp.
-  static PVRClientMythTV              *m_myth;
-  static CHelper_libXBMC_addon        *m_xbmc_addon;
-  static CHelper_libXBMC_pvr          *m_xbmc_pvr;
-  static CHelper_libXBMC_codec        *m_xbmc_codec;
-  //static CHelper_libKODI_guilib       *m_kodi_guilib;
+  pvr_props = new(PVR_PROPERTIES);
+  pvr_props->strClientPath = "";
+  pvr_props->strUserPath = "";
 
-  m_xbmc_addon = new CHelper_libXBMC_addon();
-  XBMC = m_xbmc_addon;
-
-  m_xbmc_pvr = new CHelper_libXBMC_pvr();
-  PVR = m_xbmc_pvr;
-
-  m_xbmc_codec = new CHelper_libXBMC_codec();
-  CODEC = m_xbmc_codec;
-
+  pvr_client = new(PVRClient);
+  get_addon(pvr_client);
+  ADDON_STATUS status = ADDON_Create(pvr_client, pvr_props);
+  assert(status == ADDON_STATUS_OK);
   XBMC->SetLogLevel(loglevel);
-
-  // Establish MythTV connection
-  m_myth = new PVRClientMythTV();
-  bool connected = m_myth->Connect();
-  assert(connected);
 
   // Get timer types
   {
     int size = 32;
     PVR_TIMER_TYPE* timerTypes = new PVR_TIMER_TYPE[size];
-    m_myth->GetTimerTypes(timerTypes, &size);
+    pvr_client->GetTimerTypes(timerTypes, &size);
     for (int i = 0; i < size; ++i) { fprintf(stdout, ">>> Get timer type %2.2d:%s:%u\n", i, timerTypes[i].strDescription, timerTypes[i].iAttributes); }
     delete[] timerTypes;
   }
@@ -151,10 +160,11 @@ int main(int argc, char** argv)
     suite.RunAll();
   }
 
-  delete m_myth;
-  delete m_xbmc_codec;
-  delete m_xbmc_pvr;
-  delete m_xbmc_addon;
+  ADDON_Destroy();
+  delete pvr_client;
+  delete pvr_props;
+  delete pvr_settings;
+
 #ifdef __WINDOWS__
   WSACleanup();
 #endif /* __WINDOWS__ */

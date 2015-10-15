@@ -32,7 +32,11 @@ endif()
 add_subdirectory(pvr.mythtv)
 add_subdirectory(mock)
 
-set(pvrtest_SOURCES src/pvrtest.cpp src/sm_test.cpp)
+set(pvrtest_SOURCES
+    src/libXBMC_pvr.cpp
+    src/libXBMC_addon.cpp
+    src/pvrtest.cpp
+    src/sm_test.cpp)
 
 if(NOT WIN32 AND (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX))
   if(HAS_BUILTIN_SYNC_ADD_AND_FETCH)
